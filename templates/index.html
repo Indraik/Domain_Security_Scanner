@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Domain Info Scanner</title>
+
+    <!-- Bootstrap + Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body class="dark-body">
+
+<div class="main-wrapper">
+
+<!-- TOP NAVBAR -->
+<!-- SOC STYLE HEADER -->
+<div class="soc-header">
+    <div class="soc-title">
+        <i class="bi bi-shield-lock"></i>
+        Domain Security Console
+    </div>
+
+    <div class="soc-status">
+        <span class="status-dot"></span>
+        System Operational
+    </div>
+</div>
+
+<!-- SOC SCAN BAR -->
+<div class="soc-scan-bar">
+    <form method="POST" class="scan-bar">
+        <input type="text"
+               name="domain"
+               placeholder="Enter domain (example.com)"
+               required>
+
+        <button type="submit">
+            Scan
+        </button>
+    </form>
+</div>
+
+{% if results %}
+<!-- SOC DASHBOARD TOP -->
+<div class="soc-summary">
+
+    <!-- SCORE -->
+    <div class="glass-card soc-card clickable"
+         onclick="showExplanation(
+         'Email Security Score',
+         `
+         <p><b>Score:</b> {{ results.score }}/100 ({{ results.grade }})</p>
+         <ul>
+            {% for r in results.reasons %}
+            <li>{{ r }}</li>
+            {% endfor %}
+         </ul>
+         `
+         )">
+        <h6><i class="bi bi-speedometer2"></i> Security Score</h6>
+        <div class="ring {{ results.grade|lower }}">
+            <span>{{ results.score }}/100</span>
+            <small>{{ results.grade }}</small>
+        </div>
+    </div>
+
+    <!-- VERDICT -->
+    <div class="glass-card soc-card clickable"
+         onclick="showExplanation(
+         'Overall Security Verdict',
+         document.getElementById('verdictInfo').innerHTML
+         )">
+
+        <h6><i class="bi bi-shield-check"></i> Verdict</h6>
+
+        {% if results.score >= 80 %}
+            <span class="verdict strong">SECURE</span>
+        {% elif results.score >= 50 %}
+            <span class="verdict medium">MODERATE</span>
+        {% else %}
+            <span class="verdict weak">HIGH RISK</span>
+        {% endif %}
+    </div>
+
+    <!-- AUTH RISK -->
+    <div class="glass-card soc-card clickable"
+         onclick="showExplanation(
+         'Email Authentication Risk',
+         `
+         <h6>SPF</h6>
+         <p>{{ results.spf_explain.message }}</p>
+         <hr>
+         <h6>DMARC</h6>
+         <p>{{ results.dmarc_explain.message }}</p>
+         `
+         )">
+
+        <h6><i class="bi bi-envelope-shield"></i> Auth Risk</h6>
+
+        <div class="risk-row">
+            <span>SPF ({{ results.spf_status }})</span>
+            <div class="risk-bar"
+                 style="width: {{ results.spf_score }}%; background: #22c55e;">
+            </div>
+        </div>
+
+        <div class="risk-row">
+            <span>DMARC ({{ results.dmarc_status }})</span>
+            <div class="risk-bar"
+                 style="width: {{ results.dmarc_score }}%; background: #ef4444;">
+            </div>
+        </div>
+
+    </div>
+
+    <!-- PDF -->
+    <div class="glass-card soc-card pdf-card">
+        <h6><i class="bi bi-file-earmark-pdf"></i> Report</h6>
+        <button class="btn btn-outline-light w-100" onclick="downloadPDF()">
+            Download PDF
+        </button>
+    </div>
+
+</div>
+
+
+
+    <!-- RECORD GRID -->
+    <div class="grid">
+
+        <!-- MX -->
+        <div class="glass-card clickable"
+             onclick="showExplanation(
+             'MX Records',
+             `
+             <p><b>What is MX?</b></p>
+             <p>MX records define which mail servers receive emails for this domain.</p>
+             <p><b>Your Result:</b> Google mail servers detected.</p>
+             <p><b>Why it matters:</b> Without MX records, a domain cannot receive emails.</p>
+             `
+             )">
+            <h6>MX Records</h6>
+            <pre>{{ results.mx | join('\n') }}</pre>
+        </div>
+
+        <!-- DMARC -->
+        <div class="glass-card clickable"
+             onclick="showExplanation(
+             'DMARC Records',
+             `
+             <p><b>What is DMARC?</b></p>
+             <p>DMARC protects against email spoofing and phishing.</p>
+             <p><b>Your Policy:</b></p>
+             <pre>{{ results.dmarc | join('\n') }}</pre>
+             <p>{{ results.dmarc_explain.message }}</p>
+             `
+             )">
+            <h6>DMARC Records</h6>
+            <pre>{{ results.dmarc | join('\n') }}</pre>
+        </div>
+
+        <!-- SPF -->
+        <div class="glass-card clickable"
+             onclick="showExplanation(
+             'SPF Records',
+             `
+             <p><b>What is SPF?</b></p>
+             <p>SPF defines which servers are allowed to send emails.</p>
+             <p><b>Status:</b> {{ results.spf_status }}</p>
+             <p>{{ results.spf_explain.message }}</p>
+             `
+             )">
+            <h6>SPF Records</h6>
+            <pre>{{ results.spf | join('\n') }}</pre>
+        </div>
+
+        <!-- DKIM -->
+        <div class="glass-card clickable"
+             onclick="showExplanation(
+             'DKIM Records',
+             `
+             <p><b>What is DKIM?</b></p>
+             <p>DKIM signs emails to prevent tampering.</p>
+             <p><b>Status:</b> {% if results.dkim %}Configured{% else %}Not Found{% endif %}</p>
+             `
+             )">
+            <h6>DKIM Records</h6>
+            <pre>{{ results.dkim | join('\n') or 'No DKIM records found' }}</pre>
+        </div>
+
+        <!-- TXT -->
+        <div class="glass-card clickable"
+             onclick="showExplanation(
+             'Other TXT Records',
+             `
+             <p>TXT records are used for verification and security controls.</p>
+             <p>Examples include Google verification and domain ownership checks.</p>
+             `
+             )">
+            <h6>Other TXT Records</h6>
+            <pre>{{ results.other | join('\n') }}</pre>
+        </div>
+
+        <!-- WEB -->
+        <div class="glass-card clickable"
+             onclick="showExplanation(
+             'Web Header Information',
+             `
+             <p>HTTP security headers protect websites from common attacks.</p>
+             <p>Missing headers may expose the site to clickjacking or MIME attacks.</p>
+             `
+             )">
+            <h6>Web Header Information</h6>
+            <pre>
+{% for k, v in results.web_info.items() %}
+{{ k }}: {{ v }}
+{% endfor %}
+            </pre>
+        </div>
+
+        <!-- DNSSEC (FIXED) -->
+        <div class="glass-card clickable"
+             onclick="showExplanation('DNSSEC Status', document.getElementById('dnssecInfo').innerHTML)">
+            <h6>DNSSEC</h6>
+            <pre>{{ results.dnssec.status if results.dnssec else 'Not Checked' }}</pre>
+        </div>
+
+        <!-- HTTPS (FIXED) -->
+        <div class="glass-card clickable"
+             onclick="showExplanation('HTTPS / TLS Security', document.getElementById('httpsInfo').innerHTML)">
+            <h6>HTTPS / TLS</h6>
+            <pre>{{ results.https.status if results.https else 'Not Checked' }}</pre>
+        </div>
+        
+        <div id="verdictInfo" class="d-none">
+    <p><b>Final Verdict:</b>
+        {% if results.score >= 80 %}
+            Secure
+        {% elif results.score >= 50 %}
+            Moderate Risk
+        {% else %}
+            High Risk
+        {% endif %}
+    </p>
+
+    <p><b>Why this verdict?</b></p>
+    <ul>
+        <li>Email Security Score: {{ results.score }}/100</li>
+        <li>SPF: {{ results.spf_status }}</li>
+        <li>DMARC: {{ results.dmarc_status }}</li>
+        <li>DKIM: {% if results.dkim %}Configured{% else %}Missing{% endif %}</li>
+        <li>DNSSEC: {{ results.dnssec.status }}</li>
+        <li>HTTPS: {{ results.https.status }}</li>
+    </ul>
+
+    <p>
+        This verdict summarizes how resistant the domain is to
+        <b>email spoofing, phishing, and DNS manipulation attacks</b>.
+    </p>
+
+<p><b>Recommendation:</b></p>
+{% if results.score < 80 %}
+<div class="fix-list">
+
+    <div class="fix-card danger" onclick="event.stopPropagation(); showFix('spf')">
+        <div class="fix-left">
+            <i class="bi bi-shield-exclamation"></i>
+            <div>
+                <strong>Enforce SPF</strong>
+                <small>Replace ~all with -all</small>
+            </div>
+        </div>
+        <span class="fix-tag high">High</span>
+    </div>
+
+    <div class="fix-card danger" onclick="showFix('dmarc')">
+        <div class="fix-left">
+            <i class="bi bi-envelope-x"></i>
+            <div>
+                <strong>DMARC Policy</strong>
+                <small>Set policy to reject</small>
+            </div>
+        </div>
+        <span class="fix-tag high">High</span>
+    </div>
+
+    <div class="fix-card warning" onclick="showFix('dkim')">
+        <div class="fix-left">
+            <i class="bi bi-key"></i>
+            <div>
+                <strong>Enable DKIM</strong>
+                <small>Configure email signing</small>
+            </div>
+        </div>
+        <span class="fix-tag medium">Medium</span>
+    </div>
+
+    <div class="fix-card neutral" onclick="showFix('dnssec')">
+        <div class="fix-left">
+            <i class="bi bi-lock"></i>
+            <div>
+                <strong>Enable DNSSEC</strong>
+                <small>Protect DNS integrity</small>
+            </div>
+        </div>
+        <span class="fix-tag low">Optional</span>
+    </div>
+
+</div>
+
+{% else %}
+<p>No immediate action required. Continue monitoring.</p>
+{% endif %}
+
+
+</div>
+
+
+        <!-- PORTS -->
+        <div class="glass-card clickable"
+             onclick="showExplanation(
+             'Open Ports',
+             `
+             <p>Open ports indicate running network services.</p>
+             <p>Unnecessary open ports increase attack surface.</p>
+             `
+             )">
+            <h6>Open Ports</h6>
+            <pre>{{ results.ports | join('\n') }}</pre>
+        </div>
+
+    </div>
+    {% endif %}
+
+<footer>Domain Info Scanner</footer>
+</div>
+
+{% if not results %}
+<div class="empty-wrapper">
+ <div class="glass-card empty-state">
+    <div class="empty-icon">
+        <i class="bi bi-shield-lock"></i>
+    </div>
+    <h4>Domain Security Scanner</h4>
+    <p class="empty-sub">
+        Enter a domain to analyze its email, DNS, and TLS security posture.
+    </p>
+
+    <div class="empty-features">
+        <div class="feature">
+            <i class="bi bi-envelope-check"></i>
+            SPF, DKIM, DMARC validation
+        </div>
+        <div class="feature">
+            <i class="bi bi-globe2"></i>
+            DNSSEC and TXT records
+        </div>
+        <div class="feature">
+            <i class="bi bi-lock"></i>
+            HTTPS and security headers
+        </div>
+        <div class="feature">
+            <i class="bi bi-speedometer2"></i>
+            Automated risk scoring
+        </div>
+    </div>
+ </div>
+</div>
+{% endif %}
+
+<!-- =================== ONLY FIX START =================== -->
+{% if results %}
+<!-- HIDDEN DNSSEC / HTTPS EXPLANATIONS -->
+<div class="d-none">
+
+    <div id="dnssecInfo">
+        <p><b>Status:</b> {{ results.dnssec.status if results.dnssec else 'Unknown' }}</p>
+        <p><b>Risk Level:</b> {{ results.dnssec.risk if results.dnssec else 'Unknown' }}</p>
+        <p>{{ results.dnssec.message if results.dnssec else 'DNSSEC check failed.' }}</p>
+
+        <p><b>Why it matters:</b> DNSSEC prevents attackers from forging DNS responses.</p>
+    </div>
+
+    <div id="httpsInfo">
+        <p><b>Status:</b> {{ results.https.status if results.https else 'Unknown' }}</p>
+        <p><b>Risk Level:</b> {{ results.https.risk if results.https else 'Unknown' }}</p>
+        <p>{{ results.https.message if results.https else 'HTTPS check failed.' }}</p>
+
+        <p><b>Why it matters:</b> HTTPS encrypts data and prevents Man-in-the-Middle attacks.</p>
+    </div>
+
+    <script id="report-data" type="application/json">
+{{ results | tojson }}
+</script>
+
+    <script id="fix-guides" type="application/json">
+{
+  "spf": {
+    "title": "How to Enforce SPF with -all",
+    "steps": [
+      "Log in to your domain DNS provider (Cloudflare, GoDaddy, Namecheap, etc.).",
+      "Open the DNS management section.",
+      "Locate the SPF TXT record.",
+      "Edit the record.",
+      "Replace ~all with -all.",
+      "Save the changes.",
+      "Wait for DNS propagation (5–30 minutes).",
+      "Re-scan your domain."
+    ]
+  },
+  "dmarc": {
+    "title": "How to Set DMARC to Reject",
+    "steps": [
+      "Log in to your DNS provider.",
+      "Open DNS settings.",
+      "Find or create a TXT record named _dmarc.",
+      "Set the value to: v=DMARC1; p=reject;",
+      "Save changes.",
+      "Wait for DNS propagation.",
+      "Re-scan the domain."
+    ]
+  },
+  "dkim": {
+    "title": "How to Enable DKIM",
+    "steps": [
+      "Log in to your email provider (Google Workspace, Microsoft 365, etc.).",
+      "Go to Email Authentication or DKIM settings.",
+      "Generate a DKIM key.",
+      "Copy the provided TXT record.",
+      "Add it to your DNS settings.",
+      "Wait for propagation.",
+      "Enable DKIM in your email dashboard.",
+      "Re-scan the domain."
+    ]
+  },
+  "dnssec": {
+    "title": "How to Enable DNSSEC",
+    "steps": [
+      "Log in to your domain registrar.",
+      "Open DNSSEC settings.",
+      "Click Enable DNSSEC.",
+      "Save the settings.",
+      "Wait for DNS propagation.",
+      "Re-scan the domain."
+    ]
+  }
+}
+</script>
+
+</div>
+{% endif %}
+<!-- =================== ONLY FIX END =================== -->
+
+<!-- MODAL -->
+<div class="modal fade" id="explainModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content bg-dark text-light">
+      <div class="modal-header border-secondary">
+        <h5 class="modal-title" id="explainTitle"></h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body" id="explainBody"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+function showExplanation(title, body) {
+    document.getElementById("explainTitle").innerHTML = title;
+    document.getElementById("explainBody").innerHTML = body;
+    new bootstrap.Modal(document.getElementById("explainModal")).show();
+}
+
+function downloadPDF() {
+    const dataEl = document.getElementById("report-data");
+
+    if (!dataEl) {
+        alert("No report data available");
+        return;
+    }
+
+    const reportData = JSON.parse(dataEl.textContent);
+
+    fetch("/report/pdf", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify(reportData)
+    })
+    .then(res => res.blob())
+    .then(blob => {
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = "domain_security_report.pdf";
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+    });
+}
+
+function showFix(key) {
+    const guideEl = document.getElementById("fix-guides");
+    const guides = JSON.parse(guideEl.textContent);
+    const guide = guides[key];
+
+    if (!guide) return;
+
+    let stepsHTML = '<div class="fix-steps">';
+
+    guide.steps.forEach((step, index) => {
+        stepsHTML += `
+            <div class="fix-step">
+                <div class="step-number">${index + 1}</div>
+                <div class="step-text">${step}</div>
+            </div>
+        `;
+    });
+
+    stepsHTML += '</div>';
+
+    document.getElementById("fixTitle").innerText = guide.title;
+    document.getElementById("fixBody").innerHTML = stepsHTML;
+
+    document.getElementById("fixPanel").classList.add("open");
+}
+
+function closeFixPanel() {
+    document.getElementById("fixPanel").classList.remove("open");
+}
+
+//Loading Option
+document.addEventListener("DOMContentLoaded", function () {
+    const form = document.querySelector(".scan-bar");
+    const loader = document.getElementById("scanLoader");
+
+    if (!form || !loader) {
+        console.log("Loader or form not found");
+        return;
+    }
+
+    form.addEventListener("submit", function () {
+        loader.classList.add("active");
+    });
+});
+
+</script>
+
+<!-- FIX PANEL (REQUIRED FOR RECOMMENDATIONS) -->
+<div id="fixPanel" class="fix-panel">
+    <div class="fix-header">
+        <h5 id="fixTitle"></h5>
+        <button onclick="closeFixPanel()" aria-label="Close panel">
+            <i class="bi bi-x-lg"></i>
+        </button>
+    </div>
+    <div id="fixBody" class="fix-body"></div>
+</div>
+
+
+<!-- SCAN LOADING OVERLAY (ALWAYS PRESENT) -->
+<div id="scanLoader" class="scan-loader">
+    <div class="loader-card">
+        <div class="loader-ring"></div>
+        <h5>Scanning Domain</h5>
+        <p>Analyzing DNS, Email Security, and TLS configuration...</p>
+    </div>
+</div>
+
+
+
+</body>
+</html>
