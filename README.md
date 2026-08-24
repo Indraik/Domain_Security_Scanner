@@ -34,6 +34,7 @@ pip install -r requirements.txt
 
 Run the application:
 
+cd backend
 python app.py
 
 Open browser:
