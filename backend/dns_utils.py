@@ -1,36 +1,63 @@
 import dns.resolver
 import socket
+import ssl
 import requests
+from datetime import datetime
 
 
 # ---------------- DNS RECORDS ----------------
 
+import dns.resolver
+
+# ---------------- DNS RESOLVER (IMPORTANT) ----------------
+resolver = dns.resolver.Resolver()
+resolver.nameservers = ["8.8.8.8", "1.1.1.1"]  # Google + Cloudflare
+resolver.timeout = 5
+resolver.lifetime = 5
+
+
+# ---------------- MX RECORDS ----------------
 def get_mx(domain):
     try:
-        return [str(r.exchange) for r in dns.resolver.resolve(domain, "MX")]
-    except:
+        answers = resolver.resolve(domain, "MX")
+        return [r.exchange.to_text().rstrip('.') for r in answers]
+    except Exception as e:
+        print("MX ERROR:", e)
         return []
 
+
+# ---------------- TXT RECORDS ----------------
 def get_txt(domain):
     records = []
     try:
-        answers = dns.resolver.resolve(domain, "TXT")
+        answers = resolver.resolve(domain, "TXT")
         for rdata in answers:
-            record = "".join(
+            txt = "".join(
                 part.decode() if isinstance(part, bytes) else part
                 for part in rdata.strings
             )
-            records.append(record)
-    except:
-        pass
+            records.append(txt)
+    except Exception as e:
+        print("TXT ERROR:", e)
     return records
 
+
+# ---------------- DMARC RECORDS ----------------
 def get_dmarc(domain):
     try:
-        records = dns.resolver.resolve("_dmarc." + domain, "TXT")
-        return [r.to_text() for r in records]
-    except:
+        answers = resolver.resolve(f"_dmarc.{domain}", "TXT")
+        records = []
+        for rdata in answers:
+            txt = "".join(
+                part.decode() if isinstance(part, bytes) else part
+                for part in rdata.strings
+            )
+            records.append(txt)
+        return records
+    except Exception as e:
+        print("DMARC ERROR:", e)
         return []
+
 
 # ---------------- SPF ANALYSIS ----------------
 
@@ -145,41 +172,6 @@ def classify_txt(txt_records):
         else:
             other.append(record)
     return spf, dkim, other
-
-def get_dkim(domain):
-    selectors = [
-        "default",
-        "selector1",
-        "selector2",
-        "google",
-        "k1",
-        "dkim",
-        "smtp",
-        "mail",
-        "s1",
-        "s2"
-    ]
-
-    dkim_records = []
-
-    for selector in selectors:
-        try:
-            query = f"{selector}._domainkey.{domain}"
-            answers = dns.resolver.resolve(query, "TXT")
-
-            for rdata in answers:
-                record = "".join(
-                    part.decode() if isinstance(part, bytes) else part
-                    for part in rdata.strings
-                )
-
-                if "v=DKIM1" in record:
-                    dkim_records.append(f"{query} → {record[:60]}...")
-
-        except:
-            continue
-
-    return dkim_records
 
 # ---------------- EMAIL SECURITY SCORE ----------------
 

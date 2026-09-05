@@ -340,39 +340,6 @@
 <footer>Domain Info Scanner</footer>
 </div>
 
-{% if not results %}
-<div class="empty-wrapper">
- <div class="glass-card empty-state">
-    <div class="empty-icon">
-        <i class="bi bi-shield-lock"></i>
-    </div>
-    <h4>Domain Security Scanner</h4>
-    <p class="empty-sub">
-        Enter a domain to analyze its email, DNS, and TLS security posture.
-    </p>
-
-    <div class="empty-features">
-        <div class="feature">
-            <i class="bi bi-envelope-check"></i>
-            SPF, DKIM, DMARC validation
-        </div>
-        <div class="feature">
-            <i class="bi bi-globe2"></i>
-            DNSSEC and TXT records
-        </div>
-        <div class="feature">
-            <i class="bi bi-lock"></i>
-            HTTPS and security headers
-        </div>
-        <div class="feature">
-            <i class="bi bi-speedometer2"></i>
-            Automated risk scoring
-        </div>
-    </div>
- </div>
-</div>
-{% endif %}
-
 <!-- =================== ONLY FIX START =================== -->
 {% if results %}
 <!-- HIDDEN DNSSEC / HTTPS EXPLANATIONS -->
@@ -537,24 +504,9 @@ function closeFixPanel() {
     document.getElementById("fixPanel").classList.remove("open");
 }
 
-//Loading Option
-document.addEventListener("DOMContentLoaded", function () {
-    const form = document.querySelector(".scan-bar");
-    const loader = document.getElementById("scanLoader");
-
-    if (!form || !loader) {
-        console.log("Loader or form not found");
-        return;
-    }
-
-    form.addEventListener("submit", function () {
-        loader.classList.add("active");
-    });
-});
 
 </script>
 
-<!-- FIX PANEL (REQUIRED FOR RECOMMENDATIONS) -->
 <div id="fixPanel" class="fix-panel">
     <div class="fix-header">
         <h5 id="fixTitle"></h5>
@@ -564,18 +516,6 @@ document.addEventListener("DOMContentLoaded", function () {
     </div>
     <div id="fixBody" class="fix-body"></div>
 </div>
-
-
-<!-- SCAN LOADING OVERLAY (ALWAYS PRESENT) -->
-<div id="scanLoader" class="scan-loader">
-    <div class="loader-card">
-        <div class="loader-ring"></div>
-        <h5>Scanning Domain</h5>
-        <p>Analyzing DNS, Email Security, and TLS configuration...</p>
-    </div>
-</div>
-
-
 
 </body>
 </html>

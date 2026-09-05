@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Domain Security Assessment Report</title>
+
+    <style>
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 11px;
+            color: #000;
+        }
+
+        h1 {
+            text-align: center;
+            color: #1f4fd8;
+            margin-bottom: 4px;
+        }
+
+        .subtitle {
+            text-align: center;
+            font-size: 10px;
+            margin-bottom: 20px;
+        }
+
+        .section {
+            margin-bottom: 18px;
+        }
+
+        .section h2 {
+            background: #f0f3ff;
+            padding: 6px;
+            font-size: 13px;
+            border-left: 4px solid #1f4fd8;
+            margin-bottom: 6px;
+        }
+
+        .box {
+            border: 1px solid #ccc;
+            padding: 8px;
+            margin-top: 5px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 6px;
+        }
+
+        th, td {
+            border: 1px solid #999;
+            padding: 5px;
+            text-align: left;
+        }
+
+        th {
+            background: #efefef;
+        }
+
+        .green { color: green; font-weight: bold; }
+        .red { color: red; font-weight: bold; }
+        .orange { color: orange; font-weight: bold; }
+
+        .footer {
+            text-align: center;
+            font-size: 9px;
+            margin-top: 30px;
+            color: #555;
+        }
+    </style>
+</head>
+
+<body>
+
+<h1>Domain Security Assessment Report</h1>
+
+<div class="subtitle">
+    Domain: <b>{{ domain }}</b><br>
+    Scan Date: {{ scan_date }}
+</div>
+
+<!-- ================= EXECUTIVE SUMMARY ================= -->
+<div class="section">
+    <h2>Executive Summary</h2>
+    <div class="box">
+        Overall Verdict:
+        <span class="{% if verdict == 'SECURE' %}green{% else %}red{% endif %}">
+            {{ verdict }}
+        </span>
+        <br><br>
+
+        Security Score: <b>{{ score }}/100</b><br><br>
+
+        {{ summary }}
+    </div>
+</div>
+
+<!-- ================= EMAIL AUTHENTICATION ================= -->
+<div class="section">
+    <h2>Email Authentication</h2>
+    <table>
+        <tr>
+            <th>Control</th>
+            <th>Status</th>
+            <th>Risk Level</th>
+        </tr>
+        <tr>
+            <td>SPF</td>
+            <td>{{ spf_status }}</td>
+            <td>{{ spf_risk }}</td>
+        </tr>
+        <tr>
+            <td>DMARC</td>
+            <td>{{ dmarc_status }}</td>
+            <td>{{ dmarc_risk }}</td>
+        </tr>
+        <tr>
+            <td>DKIM</td>
+            <td>{{ dkim_status }}</td>
+            <td>{{ dkim_risk }}</td>
+        </tr>
+    </table>
+</div>
+
+<!-- ================= DNS & NETWORK ================= -->
+<div class="section">
+    <h2>DNS & Network Security</h2>
+    <table>
+        <tr>
+            <th>Check</th>
+            <th>Status</th>
+        </tr>
+        <tr>
+            <td>DNSSEC</td>
+            <td>{{ dnssec_status }}</td>
+        </tr>
+        <tr>
+            <td>HTTPS / TLS</td>
+            <td>{{ https_status }}</td>
+        </tr>
+    </table>
+</div>
+
+<!-- ================= OPEN PORTS ================= -->
+<div class="section">
+    <h2>Open Ports</h2>
+    <div class="box">
+        {% if open_ports %}
+            {{ open_ports | join(', ') }}
+        {% else %}
+            No common ports detected.
+        {% endif %}
+    </div>
+</div>
+
+<!-- ================= MX RECORDS ================= -->
+<div class="section">
+    <h2>MX Records</h2>
+    <div class="box">
+        {% if mx %}
+            {% for r in mx %}
+                {{ r }}<br>
+            {% endfor %}
+        {% else %}
+            No MX records found.
+        {% endif %}
+    </div>
+</div>
+
+<!-- ================= SPF RECORDS ================= -->
+<div class="section">
+    <h2>SPF Records</h2>
+    <div class="box">
+        {% if spf %}
+            {% for r in spf %}
+                {{ r }}<br>
+            {% endfor %}
+        {% else %}
+            No SPF records found.
+        {% endif %}
+    </div>
+</div>
+
+<!-- ================= DMARC RECORDS ================= -->
+<div class="section">
+    <h2>DMARC Records</h2>
+    <div class="box">
+        {% if dmarc %}
+            {% for r in dmarc %}
+                {{ r }}<br>
+            {% endfor %}
+        {% else %}
+            No DMARC records found.
+        {% endif %}
+    </div>
+</div>
+
+<!-- ================= DKIM ================= -->
+<div class="section">
+    <h2>DKIM Status</h2>
+    <div class="box">
+        {{ dkim_status }}
+    </div>
+</div>
+
+<!-- ================= HTTP HEADERS ================= -->
+<div class="section">
+    <h2>Web Security Headers</h2>
+    <div class="box">
+        {% for key, value in headers.items() %}
+            <b>{{ key }}:</b> {{ value }}<br>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- ================= RECOMMENDATIONS ================= -->
+<div class="section">
+    <h2>Security Recommendations</h2>
+    <div class="box">
+        <ul>
+            {% for rec in recommendations %}
+                <li>{{ rec }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+</div>
+
+<!-- ================= DISCLAIMER ================= -->
+<div class="footer">
+    This report is generated using publicly available information.<br>
+    Scan only domains you own or have permission to test.<br>
+    Generated by Domain Info Scanner
+</div>
+
+</body>
+</html>
