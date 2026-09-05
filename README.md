@@ -26,7 +26,7 @@ A Flask-based web application that analyzes domain security.
 
 Clone the repository:
 
-git clone https://github.com/BHARATHKUMARN66/domain-security-scanner.git
+git clone https://github.com/Indraik/Domain_Security_Scanner.git
 
 Install dependencies:
 
@@ -41,6 +41,3 @@ Open browser:
 
 http://127.0.0.1:5000
 
-## Screenshots
-
-(Add screenshots from the screenshots folder)
