@@ -1,6 +1,13 @@
 # Domain Security Console & Auditor
 
+[![Live Demo](https://img.shields.io/badge/Live_Demo-Render-46E3B7?style=for-the-badge&logo=render&logoColor=white)](https://domain-security-scanner.onrender.com/)
+[![Python](https://img.shields.io/badge/Python-3.11+-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
+[![Flask](https://img.shields.io/badge/Flask-3.0+-000000?style=for-the-badge&logo=flask&logoColor=white)](https://flask.palletsprojects.com/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
+
 An enterprise-grade, high-performance **Python Full-Stack** web application that provides real-time threat intelligence, email authentication analysis, and external attack surface audits.
+
+🚀 **Live Deployment:** [https://domain-security-scanner.onrender.com/](https://domain-security-scanner.onrender.com/)
 
 ---
 
@@ -50,13 +57,15 @@ Domain_Security_Scanner/
 │       ├── index.html                # Main scanner & interactive dashboard
 │       └── report_pdf.html           # Print-optimized PDF template
 ├── run.py                            # Project root launcher
+├── Procfile                          # Cloud process definition (Gunicorn)
+├── render.yaml                       # Render.com Blueprint deployment spec
 ├── requirements.txt
 └── README.md
 ```
 
 ---
 
-## Installation & Setup
+## Quick Start (Run Locally)
 
 1. **Clone the repository:**
    ```bash
